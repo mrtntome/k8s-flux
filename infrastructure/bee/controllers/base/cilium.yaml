@@ -15,6 +15,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 24h
+  targetNamespace: kube-system
   chart:
     spec:
       chart: cilium
