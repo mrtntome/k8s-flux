@@ -5,3 +5,4 @@ resources:
 - cilium.yaml
 - longhorn.yaml
 - metrics-server.yaml
+- cert-manager.yaml
