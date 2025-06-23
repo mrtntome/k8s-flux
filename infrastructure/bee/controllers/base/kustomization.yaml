@@ -4,3 +4,4 @@ resources:
 - gateway-api-crds.yaml
 - cilium.yaml
 - longhorn.yaml
+- metrics-server.yaml
