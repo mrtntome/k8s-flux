@@ -16,7 +16,7 @@ metadata:
   name: metrics-server
   namespace: flux-system
 spec:
-  interval:
+  interval: 24h
   path: ./manifests/overlays/release
   prune: false
   sourceRef:
