@@ -6,3 +6,4 @@ resources:
 - longhorn.yaml
 - metrics-server.yaml
 - cert-manager.yaml
+- cnpg.yaml
