@@ -7,3 +7,4 @@ resources:
 - metrics-server.yaml
 - cert-manager.yaml
 - cnpg.yaml
+- external-secrets.yaml
