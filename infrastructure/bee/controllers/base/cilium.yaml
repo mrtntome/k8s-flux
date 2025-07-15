@@ -43,3 +43,5 @@ spec:
       enabled: true
       enableAlpn: true
       enableAppProtocol: true
+      gatewayClass:
+        create: true
