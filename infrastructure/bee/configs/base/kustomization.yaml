@@ -4,3 +4,4 @@ resources:
 - cert-manager.yaml
 - external-secrets.yaml
 - tailscale.yaml
+- gateways.yaml
