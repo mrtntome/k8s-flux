@@ -40,5 +40,6 @@ spec:
       jobEnabled: false
     defaultSettings:
       defaultDataPath: /var/mnt/longhorn-storage
+      allowCollectingLonghornUsageMetrics: false
     longhornUI:
       replicas: 1
