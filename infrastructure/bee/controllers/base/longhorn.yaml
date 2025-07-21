@@ -36,6 +36,7 @@ spec:
     persistence:
       defaultDataLocality: best-effort
       migratable: true
+      defaultClassReplicaCount: 2
     preUpgradeChecker:
       jobEnabled: false
     defaultSettings:
