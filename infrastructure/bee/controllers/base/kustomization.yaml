@@ -9,3 +9,4 @@ resources:
 - cnpg.yaml
 - external-secrets.yaml
 - tailscale.yaml
+- local-path-provisioner.yaml
