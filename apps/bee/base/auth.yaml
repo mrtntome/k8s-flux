@@ -1,0 +1,164 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: auth
+  name: auth
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lldap-storage
+  namespace: auth
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: lldap-db-cluster
+  namespace: auth
+spec:
+  instances: 2
+  bootstrap:
+    initdb:
+      database: lldap
+      owner: lldap-db-user
+  storage:
+    storageClass: longhorn-single-local
+    size: 2Gi
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: pushsecret-lldap-db
+  namespace: auth
+spec:
+  refreshInterval: 48h
+  secretStoreRefs:
+    - name: bitwarden-secrets-manager
+      kind: ClusterSecretStore
+  selector:
+    secret:
+      name: lldap-db-cluster-app
+  data:
+    - match:
+        secretKey: uri
+        remoteRef:
+          remoteKey: lldap-db-cluster-app/uri
+      metadata:
+        note: "LLDAP PostgreSQL DB uri, with user and password."
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: lldap
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://djjudas21.github.io/charts
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: lldap-secrets
+  namespace: auth
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    name: bitwarden-secrets-manager
+    kind: ClusterSecretStore
+  data:
+  - secretKey: jwt
+    remoteRef:
+      key: "lldap-secrets/jwt"
+  - secretKey: admin-password
+    remoteRef:
+      key: "lldap-secrets/admin-password"
+  - secretKey: keyseed
+    remoteRef:
+      key: "lldap-secrets/keyseed"
+  - secretKey: smtp-password
+    remoteRef:
+      key: "lldap-secrets/smtp-password"
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lldap
+  namespace: flux-system
+spec:
+  interval: 24h
+  targetNamespace: auth
+  chart:
+    spec:
+      chart: lldap
+      version: 0.5.3
+      sourceRef:
+        kind: HelmRepository
+        name: lldap
+        namespace: flux-system
+      interval: 24h
+  values:
+    image:
+      repository: ghcr.io/lldap/lldap
+      tag: "2025-08-06-alpine"
+    lldap:
+      baseDN: "dc=imnotaserver,dc=xyz"
+      secretName: "lldap-secrets"
+      jwtSecretKey: jwt
+      ldapUserDN: admin
+      ldapUserPassKey: admin-password
+      keySeedKey: keyseed
+      tz: "Americas/Argentina/Buenos_Aires"
+      verbose: true
+      smtp:
+        enablePasswordReset: true
+        server: "smtp-relay.brevo.com"
+        port: 587
+        smtpEncryption: "STARTTLS"
+        user: "mrtn.tome@gmail.com"
+        passwordKey: smtp-password
+        from: "LDAP Admin <admin@ldap.imnotaserver.xyz>"
+        replyTo: "no-reply <noreply@ldap.imnotaserver.xyz>"
+      extraVolumes:
+        - name: lldap-storage
+          persistentVolumeClaim:
+            claimName: lldap-storage
+      extraVolumeMounts:
+        - mountPath: /data
+          name: lldap-storage
+    service:
+      http:
+        type: ClusterIP
+        port: 17170
+      ldap:
+        type: ClusterIP
+        port: 3890
+    externalPostgresql:
+      enabled: true
+      fromSecret: lldap-db-cluster-app
+      uriKey: uri
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lldap-ui
+  namespace: auth
+spec:
+  parentRefs:
+  - name: metal-gateway
+    namespace: gateways
+    sectionName: imnotaserver.xyz-https
+  hostnames:
+  - "ldap.imnotaserver.xyz"
+  rules:
+  - backendRefs:
+    - name: auth-lldap-http
+      port: 17170
