@@ -64,6 +64,25 @@ spec:
   interval: 24h
   url: https://djjudas21.github.io/charts
 ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lldap-ldaps-cert
+  namespace: auth
+spec:
+  secretName: lldap-ldaps-cert
+  duration: 8760h
+  renewBefore: 720h
+  commonName: auth-lldap-ldap.auth.svc.cluster.local
+  dnsNames:
+    - auth-lldap-ldap
+    - auth-lldap-ldap.auth
+    - auth-lldap-ldap.auth.svc
+    - auth-lldap-ldap.auth.svc.cluster.local
+  issuerRef:
+    name: internal-ca-issuer
+    kind: ClusterIssuer
+---
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
@@ -118,6 +137,10 @@ spec:
       keySeedKey: keyseed
       tz: "Americas/Argentina/Buenos_Aires"
       verbose: true
+      ldaps:
+        enabled: "true"
+        certFile: "/crt.pem"
+        keyFile: "/key.pem"
       smtp:
         enablePasswordReset: true
         server: "smtp-relay.brevo.com"
@@ -131,9 +154,25 @@ spec:
         - name: lldap-storage
           persistentVolumeClaim:
             claimName: lldap-storage
+        - name: ldaps-cert
+          secret:
+            secretName: lldap-ldaps-cert
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
       extraVolumeMounts:
         - mountPath: /data
           name: lldap-storage
+        - mountPath: /crt.pem
+          subPath: tls.crt
+          name: ldaps-cert
+          readOnly: true
+        - mountPath: /key.pem
+          subPath: tls.key
+          name: ldaps-cert
+          readOnly: true
     service:
       http:
         type: ClusterIP
@@ -141,6 +180,9 @@ spec:
       ldap:
         type: ClusterIP
         port: 3890
+      ldaps:
+        type: ClusterIP
+        port: 6360
     externalPostgresql:
       enabled: true
       fromSecret: lldap-db-cluster-app
