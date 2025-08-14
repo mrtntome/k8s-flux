@@ -11,3 +11,4 @@ resources:
 - tailscale.yaml
 - local-path-provisioner.yaml
 - kubevirt.yaml
+- node-feature-discovery.yaml
