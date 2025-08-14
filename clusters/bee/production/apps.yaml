@@ -12,5 +12,5 @@ spec:
     kind: GitRepository
     name: flux-system
   path: ./apps/bee/production
-  prune: true
+  prune: false
   wait: true
